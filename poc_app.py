@@ -34,10 +34,10 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
@@ -84,18 +84,18 @@ def register():
         password = request.form['password']
         first_name = request.form['first_name']
         last_name = request.form['last_name']
-        
+
         # Check if user exists
         if User.query.filter_by(email=email).first():
             flash('Email already registered')
             return redirect(url_for('register'))
-        
+
         # Create new user
         user = User(email=email, first_name=first_name, last_name=last_name)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
-        
+
         # Create default accounts
         accounts = [
             Account(user_id=user.id, name='RRSP Account', account_type='RRSP', institution='TD Direct'),
@@ -105,10 +105,10 @@ def register():
         for account in accounts:
             db.session.add(account)
         db.session.commit()
-        
+
         login_user(user)
         return redirect(url_for('dashboard'))
-    
+
     return render_template('poc_register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -117,13 +117,13 @@ def login():
         email = request.form['email']
         password = request.form['password']
         user = User.query.filter_by(email=email).first()
-        
+
         if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid email or password')
-    
+
     return render_template('poc_login.html')
 
 @app.route('/logout')
@@ -139,10 +139,10 @@ def dashboard():
     total_assets = calculate_total_assets(current_user.id)
     total_liabilities = calculate_total_liabilities(current_user.id)
     net_worth = total_assets - total_liabilities
-    
+
     # Get recent assets
     recent_assets = Asset.query.filter_by(user_id=current_user.id).order_by(Asset.id.desc()).limit(5).all()
-    
+
     # Get account summary
     accounts = Account.query.filter_by(user_id=current_user.id).all()
     account_summary = {}
@@ -150,7 +150,7 @@ def dashboard():
         account_assets = Asset.query.filter_by(user_id=current_user.id, account_id=account.id).all()
         account_value = sum(get_current_price(asset.symbol) * asset.quantity for asset in account_assets)
         account_summary[account.account_type] = account_summary.get(account.account_type, 0) + account_value
-    
+
     return render_template('poc_dashboard.html',
                          net_worth=net_worth,
                          total_assets=total_assets,
@@ -163,14 +163,14 @@ def dashboard():
 def assets():
     user_assets = Asset.query.filter_by(user_id=current_user.id).all()
     accounts = Account.query.filter_by(user_id=current_user.id).all()
-    
+
     # Add current prices and values
     assets_with_prices = []
     for asset in user_assets:
         current_price = get_current_price(asset.symbol)
         current_value = current_price * asset.quantity if current_price else 0
         gain_loss = current_value - (asset.purchase_price * asset.quantity)
-        
+
         assets_with_prices.append({
             'asset': asset,
             'current_price': current_price,
@@ -178,7 +178,7 @@ def assets():
             'gain_loss': gain_loss,
             'gain_loss_percent': (gain_loss / (asset.purchase_price * asset.quantity)) * 100 if asset.purchase_price > 0 else 0
         })
-    
+
     return render_template('poc_assets.html', assets=assets_with_prices, accounts=accounts)
 
 @app.route('/add_asset', methods=['POST'])
@@ -190,7 +190,7 @@ def add_asset():
     purchase_price = float(request.form['purchase_price'])
     purchase_date = datetime.strptime(request.form['purchase_date'], '%Y-%m-%d').date()
     account_id = int(request.form['account_id'])
-    
+
     asset = Asset(
         user_id=current_user.id,
         account_id=account_id,
@@ -200,10 +200,10 @@ def add_asset():
         purchase_price=purchase_price,
         purchase_date=purchase_date
     )
-    
+
     db.session.add(asset)
     db.session.commit()
-    
+
     flash(f'Added {quantity} shares of {symbol} successfully!')
     return redirect(url_for('assets'))
 
@@ -220,7 +220,7 @@ def add_liability():
     balance = float(request.form['balance'])
     interest_rate = float(request.form['interest_rate']) if request.form['interest_rate'] else 0
     liability_type = request.form['liability_type']
-    
+
     liability = Liability(
         user_id=current_user.id,
         name=name,
@@ -228,10 +228,10 @@ def add_liability():
         interest_rate=interest_rate,
         liability_type=liability_type
     )
-    
+
     db.session.add(liability)
     db.session.commit()
-    
+
     flash(f'Added {liability_type}: {name} successfully!')
     return redirect(url_for('liabilities'))
 
@@ -266,26 +266,26 @@ def get_current_price(symbol):
                 'SHOP.TO': 80.00, 'RY.TO': 120.00, 'VGRO.TO': 25.50, 'VTI': 220.00
             }
             return mock_prices.get(symbol, 100.00)
-        
+
         url = f"https://www.alphavantage.co/query"
         params = {
             'function': 'GLOBAL_QUOTE',
             'symbol': symbol,
             'apikey': app.config['ALPHA_VANTAGE_API_KEY']
         }
-        
+
         response = requests.get(url, params=params, timeout=10)
         data = response.json()
-        
+
         if 'Global Quote' in data:
             return float(data['Global Quote']['05. price'])
-        
+
     except Exception as e:
         app.logger.error(f"Error fetching price for {symbol}: {e}")
-    
+
     return None
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
