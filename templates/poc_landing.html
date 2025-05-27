@@ -1,0 +1,152 @@
+{% extends "poc_base.html" %}
+
+{% block title %}NetWorth Tracker - Canadian Personal Finance{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Hero Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold text-primary mb-3">
+                <i class="fas fa-maple-leaf text-danger me-2"></i>
+                NetWorth Tracker
+            </h1>
+            <p class="lead mb-4">
+                The comprehensive personal net worth tracking application built specifically for Canadian investors
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-rocket me-2"></i>Start Tracking Free
+                </a>
+                <a href="#features" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-info-circle me-2"></i>Learn More
+                </a>
+            </div>
+        </div>
+
+        <!-- Key Features -->
+        <div id="features" class="row mb-5">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-chart-line fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">Real-time Net Worth</h5>
+                        <p class="card-text">
+                            Track your complete financial picture with real-time market data and automatic calculations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="text-success mb-3">
+                            <i class="fas fa-piggy-bank fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">RRSP & TFSA Tracking</h5>
+                        <p class="card-text">
+                            Built-in Canadian account classification with contribution room tracking and optimization.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="text-info mb-3">
+                            <i class="fas fa-shield-alt fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">Privacy First</h5>
+                        <p class="card-text">
+                            Your data stays secure with bank-level encryption and optional local storage.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POC Features -->
+        <div class="card mb-5">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0">
+                    <i class="fas fa-flask me-2"></i>POC Demo Features
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-check text-success me-2"></i>Available in POC:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check-circle text-success me-2"></i>User registration and authentication</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Stock and ETF tracking</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>RRSP/TFSA account classification</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Real-time market prices</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Net worth dashboard</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Basic liability tracking</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-clock text-warning me-2"></i>Coming in Full Version:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-clock text-warning me-2"></i>Real estate tracking</li>
+                            <li><i class="fas fa-clock text-warning me-2"></i>Physical assets (bullion)</li>
+                            <li><i class="fas fa-clock text-warning me-2"></i>Advanced analytics</li>
+                            <li><i class="fas fa-clock text-warning me-2"></i>Tax optimization</li>
+                            <li><i class="fas fa-clock text-warning me-2"></i>Family accounts</li>
+                            <li><i class="fas fa-clock text-warning me-2"></i>Professional reporting</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canadian Focus -->
+        <div class="card mb-5 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-maple-leaf me-2"></i>Built for Canadians
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Account Types:</h6>
+                        <ul>
+                            <li><strong>RRSP</strong> - Retirement savings with tax deduction</li>
+                            <li><strong>TFSA</strong> - Tax-free growth and withdrawals</li>
+                            <li><strong>RESP</strong> - Education savings with grants</li>
+                            <li><strong>Non-registered</strong> - Taxable investment accounts</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Canadian Features:</h6>
+                        <ul>
+                            <li>TSX and TSX-V stock support</li>
+                            <li>CAD currency as default</li>
+                            <li>Bank of Canada exchange rates</li>
+                            <li>Canadian tax considerations</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="text-center mb-5">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h3 class="card-title">Ready to Track Your Net Worth?</h3>
+                    <p class="card-text">
+                        Join the POC demo and see how NetWorth Tracker can help you understand and grow your wealth.
+                    </p>
+                    <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Create Free Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
