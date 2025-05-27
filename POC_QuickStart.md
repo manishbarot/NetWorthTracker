@@ -10,7 +10,7 @@
 ```bash
 # Clone the repository (after you create it on GitHub)
 git clone https://github.com/manishbarot/NetWorthTracker.git
-cd NetWorthTracker
+cd /c/Projects/NetWorthTracker
 
 # Create virtual environment
 python -m venv venv

@@ -148,7 +148,7 @@ python poc_app.py
 ## 📞 **Contact and Handoff Information**
 
 ### **Project Files Location**
-- **Local Path**: `C:/Projects/ExpenseDashboard/NetWorthTracker/`
+- **Local Path**: `C:/Projects/NetWorthTracker/`
 - **GitHub**: https://github.com/manishbarot/NetWorthTracker.git
 - **POC URL**: http://127.0.0.1:5001 (when running)
 
