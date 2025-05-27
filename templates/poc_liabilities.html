@@ -1,0 +1,227 @@
+{% extends "poc_base.html" %}
+
+{% block title %}Liabilities - NetWorth Tracker{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-1">
+            <i class="fas fa-credit-card me-2"></i>Liabilities & Debt
+        </h2>
+        <p class="text-muted">Track your mortgages, loans, and credit card balances</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addLiabilityModal">
+            <i class="fas fa-plus me-2"></i>Add Liability
+        </button>
+    </div>
+</div>
+
+<!-- Liabilities Table -->
+{% if liabilities %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Your Debts and Liabilities</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Balance</th>
+                        <th>Interest Rate</th>
+                        <th>Monthly Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for liability in liabilities %}
+                    <tr>
+                        <td><strong>{{ liability.name }}</strong></td>
+                        <td>
+                            <span class="badge 
+                                {% if liability.liability_type == 'Mortgage' %}bg-primary
+                                {% elif liability.liability_type == 'Credit Card' %}bg-danger
+                                {% elif liability.liability_type == 'Auto Loan' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {{ liability.liability_type }}
+                            </span>
+                        </td>
+                        <td class="text-danger">${{ "{:,.2f}".format(liability.balance) }}</td>
+                        <td>
+                            {% if liability.interest_rate %}
+                                {{ "{:.2f}".format(liability.interest_rate) }}%
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-danger">
+                            {% if liability.interest_rate %}
+                                -${{ "{:,.2f}".format((liability.balance * liability.interest_rate / 100) / 12) }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-danger">
+                        <th colspan="2">Total Liabilities</th>
+                        <th>${{ "{:,.2f}".format(liabilities|sum(attribute='balance')) }}</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-credit-card fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted mb-3">No Liabilities Added</h4>
+        <p class="text-muted mb-4">
+            Track your debts to get a complete picture of your net worth. 
+            Add mortgages, credit cards, loans, and other liabilities.
+        </p>
+        <button class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#addLiabilityModal">
+            <i class="fas fa-plus me-2"></i>Add Your First Liability
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Liability Types Info -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-home fa-2x text-primary mb-2"></i>
+                <h6>Mortgages</h6>
+                <p class="small text-muted">Home and investment property loans</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <i class="fas fa-credit-card fa-2x text-danger mb-2"></i>
+                <h6>Credit Cards</h6>
+                <p class="small text-muted">Revolving credit balances</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="fas fa-car fa-2x text-info mb-2"></i>
+                <h6>Auto Loans</h6>
+                <p class="small text-muted">Vehicle financing</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-secondary">
+            <div class="card-body text-center">
+                <i class="fas fa-money-bill fa-2x text-secondary mb-2"></i>
+                <h6>Other Loans</h6>
+                <p class="small text-muted">Personal loans, lines of credit</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Liability Modal -->
+<div class="modal fade" id="addLiabilityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Add New Liability
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_liability') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Liability Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="e.g., Primary Residence Mortgage, RBC Visa">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="liability_type" class="form-label">Type</label>
+                        <select class="form-select" id="liability_type" name="liability_type" required>
+                            <option value="">Select Liability Type</option>
+                            <option value="Mortgage">Mortgage</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Auto Loan">Auto Loan</option>
+                            <option value="Personal Loan">Personal Loan</option>
+                            <option value="Line of Credit">Line of Credit</option>
+                            <option value="Student Loan">Student Loan</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="balance" class="form-label">Current Balance</label>
+                                <input type="number" class="form-control" id="balance" name="balance" 
+                                       step="0.01" min="0" required placeholder="250000.00">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="interest_rate" class="form-label">Interest Rate (%)</label>
+                                <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
+                                       step="0.01" min="0" max="100" placeholder="3.25">
+                                <div class="form-text">Annual interest rate</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>POC Note:</strong> In the full version, you'll be able to add payment schedules, 
+                        amortization details, and automatic payment tracking.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-plus me-2"></i>Add Liability
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-suggest interest rates based on liability type
+document.getElementById('liability_type').addEventListener('change', function() {
+    const type = this.value;
+    const rateField = document.getElementById('interest_rate');
+    
+    const typicalRates = {
+        'Mortgage': '3.25',
+        'Credit Card': '19.99',
+        'Auto Loan': '5.99',
+        'Personal Loan': '8.99',
+        'Line of Credit': '6.45',
+        'Student Loan': '4.95'
+    };
+    
+    if (typicalRates[type] && !rateField.value) {
+        rateField.value = typicalRates[type];
+    }
+});
+</script>
+{% endblock %}

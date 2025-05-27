@@ -1,0 +1,223 @@
+{% extends "poc_base.html" %}
+
+{% block title %}Assets - NetWorth Tracker{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-1">
+            <i class="fas fa-chart-line me-2"></i>Investment Assets
+        </h2>
+        <p class="text-muted">Track your stocks, ETFs, and other investments</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
+            <i class="fas fa-plus me-2"></i>Add Asset
+        </button>
+    </div>
+</div>
+
+<!-- Assets Table -->
+{% if assets %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Your Investment Portfolio</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Account</th>
+                        <th>Quantity</th>
+                        <th>Purchase Price</th>
+                        <th>Current Price</th>
+                        <th>Current Value</th>
+                        <th>Gain/Loss</th>
+                        <th>%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in assets %}
+                    <tr>
+                        <td><strong>{{ item.asset.symbol }}</strong></td>
+                        <td>{{ item.asset.name }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if item.asset.account_id == 1 %}bg-primary{% elif item.asset.account_id == 2 %}bg-success{% else %}bg-info{% endif %}">
+                                {% if item.asset.account_id == 1 %}RRSP{% elif item.asset.account_id == 2 %}TFSA{% else %}Non-reg{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ item.asset.quantity }}</td>
+                        <td>${{ "{:,.2f}".format(item.asset.purchase_price) }}</td>
+                        <td>
+                            {% if item.current_price %}
+                                ${{ "{:,.2f}".format(item.current_price) }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ "{:,.2f}".format(item.current_value) }}</td>
+                        <td class="{% if item.gain_loss >= 0 %}gain-positive{% else %}gain-negative{% endif %}">
+                            {% if item.gain_loss >= 0 %}+{% endif %} ${{ "{:,.2f}".format(item.gain_loss) }}
+                        </td>
+                        <td class="{% if item.gain_loss_percent >= 0 %}gain-positive{% else %}gain-negative{% endif %}">
+                            {% if item.gain_loss_percent >= 0 %}+{% endif %}{{ "{:.1f}".format(item.gain_loss_percent) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-chart-line fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted mb-3">No Assets Added Yet</h4>
+        <p class="text-muted mb-4">
+            Start building your portfolio by adding your first investment. 
+            Track stocks, ETFs, and mutual funds across your RRSP, TFSA, and non-registered accounts.
+        </p>
+        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addAssetModal">
+            <i class="fas fa-plus me-2"></i>Add Your First Asset
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Canadian Account Info -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-university fa-2x text-primary mb-2"></i>
+                <h6>RRSP Account</h6>
+                <p class="small text-muted">Tax-deferred retirement savings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                <h6>TFSA Account</h6>
+                <p class="small text-muted">Tax-free savings and growth</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-bar fa-2x text-info mb-2"></i>
+                <h6>Non-registered</h6>
+                <p class="small text-muted">Taxable investment account</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Asset Modal -->
+<div class="modal fade" id="addAssetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Add New Asset
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_asset') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="symbol" class="form-label">Stock Symbol</label>
+                        <input type="text" class="form-control" id="symbol" name="symbol" required 
+                               placeholder="e.g., AAPL, SHOP.TO, VGRO.TO">
+                        <div class="form-text">Use .TO suffix for Canadian stocks (e.g., SHOP.TO)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Company/Fund Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="e.g., Apple Inc., Shopify Inc.">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       step="0.001" min="0" required placeholder="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="purchase_price" class="form-label">Purchase Price</label>
+                                <input type="number" class="form-control" id="purchase_price" name="purchase_price" 
+                                       step="0.01" min="0" required placeholder="150.00">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="purchase_date" class="form-label">Purchase Date</label>
+                        <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="account_id" class="form-label">Account Type</label>
+                        <select class="form-select" id="account_id" name="account_id" required>
+                            <option value="">Select Account Type</option>
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}">{{ account.account_type }} - {{ account.institution }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Asset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-fill company name based on common symbols
+document.getElementById('symbol').addEventListener('blur', function() {
+    const symbol = this.value.toUpperCase();
+    const nameField = document.getElementById('name');
+    
+    const commonStocks = {
+        'AAPL': 'Apple Inc.',
+        'GOOGL': 'Alphabet Inc.',
+        'MSFT': 'Microsoft Corporation',
+        'TSLA': 'Tesla Inc.',
+        'SHOP.TO': 'Shopify Inc.',
+        'RY.TO': 'Royal Bank of Canada',
+        'VGRO.TO': 'Vanguard Growth ETF Portfolio',
+        'VTI': 'Vanguard Total Stock Market ETF'
+    };
+    
+    if (commonStocks[symbol] && !nameField.value) {
+        nameField.value = commonStocks[symbol];
+    }
+});
+
+// Set default purchase date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('purchase_date').value = today;
+});
+</script>
+{% endblock %}

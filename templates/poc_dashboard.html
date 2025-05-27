@@ -1,0 +1,225 @@
+{% extends "poc_base.html" %}
+
+{% block title %}Dashboard - NetWorth Tracker{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-1">Welcome back, {{ current_user.first_name }}!</h2>
+        <p class="text-muted">Here's your financial overview</p>
+    </div>
+</div>
+
+<!-- Net Worth Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-pie me-2"></i>Net Worth
+                </h5>
+                <h2 class="mb-0">${{ "{:,.2f}".format(net_worth) }}</h2>
+                <small class="text-light">
+                    <i class="fas fa-arrow-up me-1"></i>+2.3% this month
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">
+                    <i class="fas fa-chart-line me-2"></i>Total Assets
+                </h5>
+                <h3 class="mb-0 text-success">${{ "{:,.2f}".format(total_assets) }}</h3>
+                <small class="text-muted">Investments & Cash</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-danger">
+                    <i class="fas fa-credit-card me-2"></i>Total Liabilities
+                </h5>
+                <h3 class="mb-0 text-danger">${{ "{:,.2f}".format(total_liabilities) }}</h3>
+                <small class="text-muted">Debts & Loans</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Summary by Type -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-piggy-bank me-2"></i>Canadian Account Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for account_type, value in account_summary.items() %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">
+                                    {% if account_type == 'RRSP' %}
+                                        <i class="fas fa-university me-2 text-primary"></i>RRSP
+                                    {% elif account_type == 'TFSA' %}
+                                        <i class="fas fa-shield-alt me-2 text-success"></i>TFSA
+                                    {% else %}
+                                        <i class="fas fa-chart-bar me-2 text-info"></i>{{ account_type }}
+                                    {% endif %}
+                                </h6>
+                                <h4 class="mb-0">${{ "{:,.2f}".format(value) }}</h4>
+                                {% if account_type == 'RRSP' %}
+                                    <small class="text-muted">Tax-deferred growth</small>
+                                {% elif account_type == 'TFSA' %}
+                                    <small class="text-muted">Tax-free growth</small>
+                                {% else %}
+                                    <small class="text-muted">Taxable account</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Assets and Quick Actions -->
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Assets
+                </h5>
+                <a href="{{ url_for('assets') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_assets %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Name</th>
+                                    <th>Quantity</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asset in recent_assets %}
+                                <tr>
+                                    <td><strong>{{ asset.symbol }}</strong></td>
+                                    <td>{{ asset.name }}</td>
+                                    <td>{{ asset.quantity }}</td>
+                                    <td>${{ "{:,.2f}".format(asset.quantity * asset.purchase_price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No assets added yet</h6>
+                        <p class="text-muted">Start by adding your first investment</p>
+                        <a href="{{ url_for('assets') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Asset
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('assets') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Asset
+                    </a>
+                    <a href="{{ url_for('liabilities') }}" class="btn btn-outline-danger">
+                        <i class="fas fa-credit-card me-2"></i>Add Liability
+                    </a>
+                    <button class="btn btn-outline-info" disabled>
+                        <i class="fas fa-file-export me-2"></i>Export Data
+                        <span class="badge bg-warning text-dark ms-2">Soon</span>
+                    </button>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="text-center">
+                    <h6 class="text-muted">POC Features</h6>
+                    <div class="small">
+                        <div class="mb-1">
+                            <i class="fas fa-check text-success me-1"></i>Real-time prices
+                        </div>
+                        <div class="mb-1">
+                            <i class="fas fa-check text-success me-1"></i>Canadian accounts
+                        </div>
+                        <div class="mb-1">
+                            <i class="fas fa-check text-success me-1"></i>Net worth tracking
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Canadian Features Highlight -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="text-danger mb-2">
+                            <i class="fas fa-maple-leaf me-2"></i>Canadian Investment Features
+                        </h6>
+                        <p class="mb-0">
+                            Track your RRSP and TFSA contributions, monitor Canadian stocks (TSX), 
+                            and optimize your tax-advantaged accounts - all in one place.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-outline-danger" disabled>
+                            <i class="fas fa-calculator me-2"></i>Tax Optimizer
+                            <span class="badge bg-warning text-dark ms-2">Coming Soon</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simple chart placeholder - in full version would use Chart.js
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('NetWorth Tracker POC Dashboard loaded');
+    console.log('Net Worth: ${{ net_worth }}');
+    console.log('Total Assets: ${{ total_assets }}');
+    console.log('Total Liabilities: ${{ total_liabilities }}');
+});
+</script>
+{% endblock %}
