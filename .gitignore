@@ -213,3 +213,40 @@ node_modules/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+# Node.js and TypeScript specific
+*.tsbuildinfo
+dist/
+build/
+
+# Testing
+coverage/
+*.lcov
+
+# Temporary folders
+tmp/
+temp/
+
+# Docker
+.dockerignore
+
+# Development environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+*.tgz
+
+# ESLint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Storybook build outputs
+.out
+.storybook-out
