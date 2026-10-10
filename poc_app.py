@@ -10,7 +10,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date, timedelta
 import requests
 from decouple import config
-import time
 from models import db, User, Account, Asset, Liability, AssetType, LiabilityType
 
 # Initialize Flask app
@@ -126,7 +125,7 @@ def dashboard():
     account_summary = {}
     for account in accounts:
         account_assets = Asset.query.filter_by(user_id=current_user.id, account_id=account.id).all()
-        account_value = sum((get_current_price(asset.symbol) or 0) * float(asset.quantity) for asset in account_assets)
+        account_value = sum(float(asset.quantity) * get_effective_price(asset) for asset in account_assets)
         account_summary[account.account_type] = account_summary.get(account.account_type, 0) + account_value
 
     return render_template('poc_dashboard.html',
@@ -148,16 +147,17 @@ def assets():
     # Add current prices and values
     assets_with_prices = []
     for asset in user_assets:
-        current_price = get_current_price(asset.symbol)
-        current_value = current_price * float(asset.quantity) if current_price else 0
-        gain_loss = current_value - (float(asset.purchase_price) * float(asset.quantity))
+        current_price = get_effective_price(asset)
+        current_value = current_price * float(asset.quantity)
+        cost_basis = float(asset.purchase_price) * float(asset.quantity)
+        gain_loss = current_value - cost_basis
 
         assets_with_prices.append({
             'asset': asset,
             'current_price': current_price,
             'current_value': current_value,
             'gain_loss': gain_loss,
-            'gain_loss_percent': (gain_loss / (float(asset.purchase_price) * float(asset.quantity))) * 100 if asset.purchase_price > 0 else 0
+            'gain_loss_percent': (gain_loss / cost_basis) * 100 if cost_basis > 0 else 0
         })
 
     return render_template('poc_assets.html',
@@ -277,16 +277,17 @@ def get_liability_type_id(name):
     db.session.flush()
     return liability_type.id
 
+def get_effective_price(asset):
+    """Current market price, falling back to purchase price when unavailable.
+
+    Keeps the dashboard and assets page consistent when a price lookup fails.
+    """
+    price = get_current_price(asset.symbol)
+    return price if price else float(asset.purchase_price)
+
 def calculate_total_assets(user_id):
     assets = Asset.query.filter_by(user_id=user_id).all()
-    total = 0
-    for asset in assets:
-        current_price = get_current_price(asset.symbol)
-        if current_price:
-            total += float(asset.quantity) * current_price
-        else:
-            total += float(asset.quantity) * float(asset.purchase_price)
-    return total
+    return sum(float(asset.quantity) * get_effective_price(asset) for asset in assets)
 
 def calculate_total_liabilities(user_id):
     liabilities = Liability.query.filter_by(user_id=user_id).all()
@@ -352,9 +353,6 @@ def search_symbols(query):
             ][:5]  # Limit to 5 results
             symbol_cache[cache_key] = (filtered_results, current_time)
             return filtered_results
-
-        # Rate limiting: wait 1 second between API calls
-        time.sleep(1)
 
         url = "https://www.alphavantage.co/query"
         params = {
