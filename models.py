@@ -6,14 +6,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
 
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     """User model for authentication and profile management."""
     __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
@@ -29,14 +30,22 @@ class User(UserMixin, db.Model):
     liabilities = db.relationship('Liability', backref='user', lazy=True, cascade='all, delete-orphan')
     accounts = db.relationship('Account', backref='user', lazy=True, cascade='all, delete-orphan')
     transactions = db.relationship('Transaction', backref='user', lazy=True, cascade='all, delete-orphan')
+    networth_snapshots = db.relationship('NetWorthSnapshot', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         """Set password hash."""
-        self.password_hash = generate_password_hash(password)
-    
+        self.password_hash = generate_password_hash(password, method='scrypt')
+
     def check_password(self, password):
         """Check password against hash."""
-        return check_password_hash(self.password_hash, password)
+        try:
+            return check_password_hash(self.password_hash, password)
+        except ValueError as e:
+            if "Missing required argument 'digestmod'" in str(e):
+                # Handle old hashes that don't specify method - assume scrypt
+                return check_password_hash(self.password_hash, password, method='scrypt')
+            else:
+                raise
     
     def __repr__(self):
         return f'<User {self.email}>'
@@ -58,9 +67,9 @@ class AccountType(db.Model):
 class Account(db.Model):
     """Financial accounts (bank accounts, investment accounts, etc.)."""
     __tablename__ = 'accounts'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     account_type_id = db.Column(db.Integer, db.ForeignKey('account_types.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     institution = db.Column(db.String(100), nullable=False)
@@ -81,6 +90,8 @@ class Account(db.Model):
         """Get account type name."""
         return self.type.name if self.type else None
 
+    __table_args__ = ()
+
 class AssetType(db.Model):
     """Asset type classification."""
     __tablename__ = 'asset_types'
@@ -96,9 +107,9 @@ class AssetType(db.Model):
 class Asset(db.Model):
     """Investment assets (stocks, ETFs, mutual funds, real estate, etc.)."""
     __tablename__ = 'assets'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
     asset_type_id = db.Column(db.Integer, db.ForeignKey('asset_types.id'), nullable=False)
     symbol = db.Column(db.String(20))  # Stock ticker, mutual fund code, etc.
@@ -121,6 +132,8 @@ class Asset(db.Model):
     def total_cost(self):
         """Calculate total cost basis."""
         return float(self.quantity * self.purchase_price)
+
+    __table_args__ = ()
 
 class AssetPrice(db.Model):
     """Historical and current asset prices."""
@@ -152,9 +165,9 @@ class LiabilityType(db.Model):
 class Liability(db.Model):
     """Debts and liabilities (mortgages, loans, credit cards, etc.)."""
     __tablename__ = 'liabilities'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     liability_type_id = db.Column(db.Integer, db.ForeignKey('liability_types.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     institution = db.Column(db.String(100), nullable=False)
@@ -177,12 +190,14 @@ class Liability(db.Model):
         """Get liability type name."""
         return self.type.name if self.type else None
 
+    __table_args__ = ()
+
 class Property(db.Model):
     """Real estate properties."""
     __tablename__ = 'properties'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     address = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(100), nullable=False)
     province = db.Column(db.String(50), nullable=False)
@@ -220,7 +235,7 @@ class PhysicalAsset(db.Model):
     __tablename__ = 'physical_assets'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     asset_type = db.Column(db.String(50), nullable=False)  # gold, silver, art, etc.
     description = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Numeric(15, 6), nullable=False)
@@ -241,7 +256,7 @@ class Transaction(db.Model):
     __tablename__ = 'transactions'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
     amount = db.Column(db.Numeric(15, 2), nullable=False)
     transaction_type = db.Column(db.String(50), nullable=False)  # buy, sell, dividend, etc.
@@ -261,7 +276,7 @@ class NetWorthSnapshot(db.Model):
     __tablename__ = 'networth_snapshots'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     snapshot_date = db.Column(db.Date, nullable=False)
     total_assets = db.Column(db.Numeric(15, 2), nullable=False)
     total_liabilities = db.Column(db.Numeric(15, 2), nullable=False)

@@ -9,7 +9,9 @@
         <h2 class="mb-1">
             <i class="fas fa-chart-line me-2"></i>Investment Assets
         </h2>
-        <p class="text-muted">Track your stocks, ETFs, and other investments</p>
+        <p class="text-muted">
+            Track your stocks, ETFs, and other investments across your accounts
+        </p>
     </div>
     <div class="col-md-4 text-end">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
@@ -46,7 +48,7 @@
                         <td><strong>{{ item.asset.symbol }}</strong></td>
                         <td>{{ item.asset.name }}</td>
                         <td>
-                            <span class="badge 
+                            <span class="badge
                                 {% if item.asset.account_id == 1 %}bg-primary{% elif item.asset.account_id == 2 %}bg-success{% else %}bg-info{% endif %}">
                                 {% if item.asset.account_id == 1 %}RRSP{% elif item.asset.account_id == 2 %}TFSA{% else %}Non-reg{% endif %}
                             </span>
@@ -146,6 +148,18 @@
                         <input type="text" class="form-control" id="name" name="name" required 
                                placeholder="e.g., Apple Inc., Shopify Inc.">
                     </div>
+
+                    <div class="mb-3">
+                        <label for="asset_type" class="form-label">Asset Type</label>
+                        <select class="form-select" id="asset_type" name="asset_type" required>
+                            <option value="Stock" selected>Stock</option>
+                            <option value="ETF">ETF</option>
+                            <option value="Mutual Fund">Mutual Fund</option>
+                            <option value="Bond">Bond</option>
+                            <option value="Crypto">Crypto</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-6">
@@ -178,6 +192,7 @@
                             {% endfor %}
                         </select>
                     </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -193,31 +208,133 @@
 
 {% block scripts %}
 <script>
-// Auto-fill company name based on common symbols
-document.getElementById('symbol').addEventListener('blur', function() {
-    const symbol = this.value.toUpperCase();
-    const nameField = document.getElementById('name');
-    
-    const commonStocks = {
-        'AAPL': 'Apple Inc.',
-        'GOOGL': 'Alphabet Inc.',
-        'MSFT': 'Microsoft Corporation',
-        'TSLA': 'Tesla Inc.',
-        'SHOP.TO': 'Shopify Inc.',
-        'RY.TO': 'Royal Bank of Canada',
-        'VGRO.TO': 'Vanguard Growth ETF Portfolio',
-        'VTI': 'Vanguard Total Stock Market ETF'
+// Debounce function to limit API calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
     };
-    
-    if (commonStocks[symbol] && !nameField.value) {
-        nameField.value = commonStocks[symbol];
-    }
-});
+}
 
-// Set default purchase date to today
+// Autocomplete functionality for symbol search
 document.addEventListener('DOMContentLoaded', function() {
+    const symbolInput = document.getElementById('symbol');
+    const nameInput = document.getElementById('name');
+    const suggestionsDiv = document.createElement('div');
+    suggestionsDiv.className = 'autocomplete-suggestions border rounded mt-1 bg-white position-absolute d-none';
+    suggestionsDiv.style.cssText = 'z-index: 1000; max-height: 200px; overflow-y: auto; width: 100%; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);';
+    symbolInput.parentNode.style.position = 'relative';
+    symbolInput.parentNode.appendChild(suggestionsDiv);
+
+    let currentFocus = -1;
+
+    // Debounced search function
+    const searchSymbols = debounce(async function(query) {
+        if (query.length < 1) {
+            suggestionsDiv.classList.add('d-none');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/symbol_search?q=${encodeURIComponent(query)}`);
+            const results = await response.json();
+
+            if (results.length > 0) {
+                suggestionsDiv.innerHTML = results.map((item, index) =>
+                    `<div class="autocomplete-item px-3 py-2 cursor-pointer" data-index="${index}" data-symbol="${item.symbol}" data-name="${item.name}" style="cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                        <strong>${item.symbol}</strong> - ${item.name}
+                    </div>`
+                ).join('');
+                suggestionsDiv.classList.remove('d-none');
+            } else {
+                suggestionsDiv.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Error fetching symbol suggestions:', error);
+            suggestionsDiv.classList.add('d-none');
+        }
+    }, 300);
+
+    // Input event listener
+    symbolInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        searchSymbols(query);
+        currentFocus = -1;
+    });
+
+    // Handle keyboard navigation
+    symbolInput.addEventListener('keydown', function(e) {
+        const items = suggestionsDiv.querySelectorAll('.autocomplete-item');
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentFocus = currentFocus < items.length - 1 ? currentFocus + 1 : 0;
+            updateFocus(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentFocus = currentFocus > 0 ? currentFocus - 1 : items.length - 1;
+            updateFocus(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentFocus >= 0 && items[currentFocus]) {
+                selectItem(items[currentFocus]);
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsDiv.classList.add('d-none');
+            currentFocus = -1;
+        }
+    });
+
+    // Handle suggestion clicks
+    suggestionsDiv.addEventListener('click', function(e) {
+        const item = e.target.closest('.autocomplete-item');
+        if (item) {
+            selectItem(item);
+        }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!symbolInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+            suggestionsDiv.classList.add('d-none');
+        }
+    });
+
+    // Helper function to update focus
+    function updateFocus(items) {
+        items.forEach((item, index) => {
+            if (index === currentFocus) {
+                item.classList.add('bg-light');
+            } else {
+                item.classList.remove('bg-light');
+            }
+        });
+    }
+
+    // Helper function to select an item
+    function selectItem(item) {
+        const symbol = item.dataset.symbol;
+        const name = item.dataset.name;
+
+        symbolInput.value = symbol;
+        nameInput.value = name;
+        suggestionsDiv.classList.add('d-none');
+        currentFocus = -1;
+    }
+
+    // Set default purchase date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('purchase_date').value = today;
 });
 </script>
+<style>
+.autocomplete-item:hover {
+    background-color: #f8f9fa !important;
+}
+</style>
 {% endblock %}

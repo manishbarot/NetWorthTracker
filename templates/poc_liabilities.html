@@ -9,7 +9,9 @@
         <h2 class="mb-1">
             <i class="fas fa-credit-card me-2"></i>Liabilities & Debt
         </h2>
-        <p class="text-muted">Track your mortgages, loans, and credit card balances</p>
+        <p class="text-muted">
+            Track your mortgages, loans, and credit card balances across your accounts
+        </p>
     </div>
     <div class="col-md-4 text-end">
         <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addLiabilityModal">
@@ -41,7 +43,7 @@
                     <tr>
                         <td><strong>{{ liability.name }}</strong></td>
                         <td>
-                            <span class="badge 
+                            <span class="badge
                                 {% if liability.liability_type == 'Mortgage' %}bg-primary
                                 {% elif liability.liability_type == 'Credit Card' %}bg-danger
                                 {% elif liability.liability_type == 'Auto Loan' %}bg-info
@@ -152,6 +154,12 @@
                         <input type="text" class="form-control" id="name" name="name" required 
                                placeholder="e.g., Primary Residence Mortgage, RBC Visa">
                     </div>
+
+                    <div class="mb-3">
+                        <label for="institution" class="form-label">Lender / Institution</label>
+                        <input type="text" class="form-control" id="institution" name="institution" required
+                               placeholder="e.g., RBC, TD, Scotiabank">
+                    </div>
                     
                     <div class="mb-3">
                         <label for="liability_type" class="form-label">Type</label>
@@ -185,9 +193,10 @@
                         </div>
                     </div>
                     
+
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>POC Note:</strong> In the full version, you'll be able to add payment schedules, 
+                        <strong>POC Note:</strong> In the full version, you'll be able to add payment schedules,
                         amortization details, and automatic payment tracking.
                     </div>
                 </div>
