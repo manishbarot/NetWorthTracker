@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date, timedelta
 import requests
 from decouple import config
+from flask_wtf.csrf import CSRFProtect
 from models import db, User, Account, Asset, Liability, AssetType, LiabilityType
 
 # Initialize Flask app
@@ -29,6 +30,7 @@ CACHE_DURATION = timedelta(hours=24)
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+csrf = CSRFProtect(app)
 
 
 @login_manager.user_loader
